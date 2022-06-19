@@ -127,6 +127,16 @@ func (o *Opfcontent) LoadManifestAndSpine(hrefs []string) {
 	items := make([]Item, 0)
 	itemRefs := make([]ItemRef, 0)
 	cnt := 1
+	items = append(items, Item{
+		Href:      "toc.ncx",
+		Id:        "ncx",
+		MediaType: "application/x-dtbncx+xml",
+	})
+	items = append(items, Item{
+		Href:      "cover.png",
+		Id:        "cover",
+		MediaType: "application/png",
+	})
 	for _, href := range hrefs {
 		id := "id_" + strconv.Itoa(cnt)
 		items = append(items, Item{

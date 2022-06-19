@@ -48,7 +48,7 @@ func (book *Book) LoadBook() error {
 			chapter = Chapter{
 				FileName:   "text" + fmt.Sprintf("%05d", cnt) + ".html",
 				Title:      strings.Replace(line, "\r\n", "", -1),
-				Paragraphs: []string{"\r\n", "\r\n", "\r\n", "\r\n"},
+				Paragraphs: []string{},
 			}
 		} else {
 			line = strings.Replace(line, "\r\n", "", -1)

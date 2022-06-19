@@ -27,7 +27,7 @@ func InitConfig() {
 	if err != nil {
 		panic(err)
 	}
-	cfgPath := currDir + "/" + ConfigFile
+	cfgPath := currDir + string(os.PathSeparator) + ConfigFile
 
 	if !Exists(cfgPath) {
 		err = ioutil.WriteFile(cfgPath, []byte(DefaultConfig), 0444)

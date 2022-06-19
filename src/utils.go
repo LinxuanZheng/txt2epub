@@ -1,11 +1,15 @@
 package src
 
 import (
-	"archive/zip"
+	"fmt"
+	"github.com/LinxuanZheng/customZip"
 	"io"
 	"io/ioutil"
 	"os"
+	"path"
 )
+
+const TXTSuffix = ".txt"
 
 // Exists 判断所给路径文件/文件夹是否存在
 func Exists(path string) bool {
@@ -64,21 +68,33 @@ func ZipCompress(files []*os.File, dest string) error {
 	w := zip.NewWriter(d)
 	defer w.Close()
 	for _, file := range files {
-		err := compress(file, "", w)
-		if err != nil {
-			return err
+		if path.Base(file.Name()) == "mimetype" {
+			err := compress(file, "", w, zip.Store)
+			if err != nil {
+				return err
+			}
+		} else {
+			err := compress(file, "", w, zip.Deflate)
+			if err != nil {
+				return err
+			}
 		}
+
 	}
 	return nil
 }
 
-func compress(file *os.File, prefix string, zw *zip.Writer) error {
+func compress(file *os.File, prefix string, zw *zip.Writer, method uint16) error {
 	info, err := file.Stat()
 	if err != nil {
 		return err
 	}
 	if info.IsDir() {
-		prefix = prefix + "/" + info.Name()
+		if prefix != "" {
+			prefix = prefix + "/" + info.Name()
+		} else {
+			prefix = info.Name()
+		}
 		fileInfos, err := file.Readdir(-1)
 		if err != nil {
 			return err
@@ -88,25 +104,41 @@ func compress(file *os.File, prefix string, zw *zip.Writer) error {
 			if err != nil {
 				return err
 			}
-			err = compress(f, prefix, zw)
+			err = compress(f, prefix, zw, method)
 			if err != nil {
 				return err
 			}
 		}
 	} else {
 		header, err := zip.FileInfoHeader(info)
-		header.Name = prefix + "/" + header.Name
+		if prefix != "" {
+			header.Name = prefix + "/" + header.Name
+		}
 		if err != nil {
 			return err
 		}
-		writer, err := zw.CreateHeader(header)
-		if err != nil {
-			return err
-		}
-		_, err = io.Copy(writer, file)
-		file.Close()
-		if err != nil {
-			return err
+		header.Method = method
+
+		if header.Name == "mimetype" {
+			writer, err := zw.CreateHeaderIgnoringExtra(header)
+			if err != nil {
+				return err
+			}
+			_, err = io.Copy(writer, file)
+			file.Close()
+			if err != nil {
+				return err
+			}
+		} else {
+			writer, err := zw.CreateHeader(header)
+			if err != nil {
+				return err
+			}
+			_, err = io.Copy(writer, file)
+			file.Close()
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -136,4 +168,31 @@ func GetFilesAndDirs(dirPth string) (files []string, dirs []string, err error) {
 	}
 
 	return files, dirs, nil
+}
+
+func GetTxtFile() (file string, err error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	dir, err := ioutil.ReadDir(wd)
+	if err != nil {
+		return "", err
+	}
+
+	for _, fi := range dir {
+		if !fi.IsDir() { // 目录, 递归遍历
+			if path.Ext(fi.Name()) == TXTSuffix {
+				return fi.Name(), nil
+			}
+		}
+	}
+
+	return "", nil
+}
+
+func ErrorReport(a ...interface{}) {
+	fmt.Println(a)
+	os.Exit(0)
 }

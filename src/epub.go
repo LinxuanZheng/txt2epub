@@ -5,6 +5,7 @@ import (
 	"github.com/klarkxy/gohtml"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 )
@@ -144,10 +145,10 @@ func (e *Epub) GenNCX() {
 		Attr("version", "2005-1")
 
 	head := ncx.Head()
-	head.Meta().Attr("name", "dtb:uid").Attr("content", "2131")
-	head.Meta().Attr("name", "dtb:depth").Attr("content", "1")
-	head.Meta().Attr("name", "dtb:totalPageCount").Attr("content", "0")
-	head.Meta().Attr("name", "dtb:maxPageNumber").Attr("content", "0")
+	head.Tag("meta").Attr("name", "dtb:uid").Attr("content", e.Book.Config.UUID)
+	head.Tag("meta").Attr("name", "dtb:depth").Attr("content", "1")
+	head.Tag("meta").Attr("name", "dtb:totalPageCount").Attr("content", "0")
+	head.Tag("meta").Attr("name", "dtb:maxPageNumber").Attr("content", "0")
 
 	ncx.Tag("docTitle").Tag("text").Text(e.Book.Config.Title)
 
@@ -157,7 +158,7 @@ func (e *Epub) GenNCX() {
 	for _, chapter := range e.Book.Chapters {
 		navPoint := navMap.Tag("navPoint").
 			Attr("id", "id_"+strconv.Itoa(cnt)).
-			Attr("playOrder", "1").
+			Attr("playOrder", strconv.Itoa(cnt)).
 			Attr("class", "chapter")
 		navPoint.Tag("navLabel").Tag("text").Text(chapter.Title)
 		navPoint.Tag("content").Attr("src", "TEXT/"+chapter.FileName)
@@ -186,13 +187,17 @@ func (e *Epub) GenZip() {
 	}
 
 	files = append(files, dirs...)
-	openFiles := make([]*os.File, 0)
+	openFiles := make([]*os.File, 1)
 	for _, file := range files {
 		fi, err := os.Open(file)
 		if err != nil {
 			panic(err)
 		}
-		openFiles = append(openFiles, fi)
+		if path.Base(fi.Name()) == "mimetype" {
+			openFiles[0] = fi
+		} else {
+			openFiles = append(openFiles, fi)
+		}
 	}
 
 	wd, err := os.Getwd()
